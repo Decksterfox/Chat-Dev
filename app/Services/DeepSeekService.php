@@ -14,6 +14,12 @@ class DeepSeekService
     {
         $this->apiKey = config('deepseek.api_key');
         $this->baseUrl = config('deepseek.base_url');
+        
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException(
+                'DeepSeek API key is not configured. Please set DEEPSEEK_API_KEY in your .env file.'
+            );
+        }
     }
 
     public function sendMessage($message)
