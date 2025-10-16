@@ -53,9 +53,12 @@ class ChatController extends Controller
     public function sendMessage(Request $request)
     {
         $request->validate([
-            'message' => 'required|string',
+            'message' => 'required|string|max:4000',
             'conversation_id' => 'nullable|exists:conversations,id',
         ]);
+
+        // Sanitizar entrada do usuário
+        $sanitizedMessage = strip_tags($request->message);
 
         // Criar ou obter conversa
         if ($request->conversation_id) {
@@ -64,7 +67,7 @@ class ChatController extends Controller
                 ->firstOrFail();
         } else {
             $conversation = Conversation::create([
-                'title' => substr($request->message, 0, 50) . '...',
+                'title' => substr($sanitizedMessage, 0, 50) . (strlen($sanitizedMessage) > 50 ? '...' : ''),
                 'user_id' => auth()->id(),
             ]);
         }
@@ -72,7 +75,7 @@ class ChatController extends Controller
         // Salvar mensagem do usuário
         Message::create([
             'conversation_id' => $conversation->id,
-            'content' => $request->message,
+            'content' => $sanitizedMessage,
             'sender' => 'user',
         ]);
 
@@ -84,7 +87,7 @@ class ChatController extends Controller
         }
 
         // Chamar API DeepSeek
-        $botResponse = $this->deepSeekService->sendMessage($pdfContext . $request->message);
+        $botResponse = $this->deepSeekService->sendMessage($pdfContext . $sanitizedMessage);
 
         // Salvar resposta do bot
         Message::create([
